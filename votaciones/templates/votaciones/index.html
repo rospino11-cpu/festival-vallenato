@@ -1,0 +1,733 @@
+﻿<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100 font-sans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plataforma Oficial de Votación - Festival Vallenato {{ festival.anio }}</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .gold-gradient {
+      background: linear-gradient(135deg, #F59E0B 0%, #D97706 50%, #B45309 100%);
+    }
+    .gold-text {
+      background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-gold {
+      background: rgba(30, 27, 75, 0.4);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- Header Principal -->
+  <header class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      
+      <!-- Logo Oficial -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="showView('home')">
+        <div class="w-10 h-10 rounded-full gold-gradient p-0.5 shadow-lg shadow-amber-500/20 flex items-center justify-center">
+          <div class="w-full h-full bg-slate-950 rounded-full flex items-center justify-center">
+            <span class="text-xl">🪗</span>
+          </div>
+        </div>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
+            FESTIVAL VALLENATO
+            <span class="text-[10px] font-extrabold gold-gradient text-slate-950 px-1.5 py-0.5 rounded-full uppercase">{{ festival.anio }}</span>
+          </h1>
+          <p class="text-[11px] text-amber-400/90 font-medium">Fundación Festival Leyenda Vallenata</p>
+        </div>
+      </div>
+
+      <!-- Menú Desktop -->
+      <nav class="hidden md:flex items-center space-x-1">
+        <button onclick="showView('home')" class="px-3 py-1.5 rounded-lg text-sm font-medium transition text-amber-400 bg-slate-900 border border-slate-800">
+          🏠 Inicio
+        </button>
+        <button onclick="showView('cronograma')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition">
+          📅 Cronograma
+        </button>
+        <button onclick="showView('votar')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition">
+          👑 Reyes Vallenatos
+        </button>
+        <button onclick="showView('resultados')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition">
+          📊 Resultados
+        </button>
+        <button onclick="showView('perfil')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-900 transition">
+          👤 Mi Perfil
+        </button>
+        {% if user.is_staff or user.is_superuser %}
+          <button onclick="showView('admin-panel')" class="px-3 py-1.5 rounded-lg text-sm font-bold text-slate-950 gold-gradient transition shadow-md">
+            🎛️ Panel Fundación
+          </button>
+        {% endif %}
+      </nav>
+
+      <!-- Estado de Autenticación en Django -->
+      <div class="flex items-center space-x-2">
+        <div id="user-badge" class="flex items-center space-x-2">
+          {% if user.is_authenticated %}
+            <span class="text-xs text-amber-300 font-bold bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
+              🟢 {{ user.first_name|default:user.cedula }} ({{ user.cedula }})
+            </span>
+            <a href="{% url 'salir' %}" class="text-xs text-rose-400 hover:underline px-2 py-1 font-semibold">Salir</a>
+          {% else %}
+            <button onclick="openModal('modal-login')" class="bg-slate-900 border border-slate-700 text-slate-200 text-xs font-medium px-3 py-1.5 rounded-lg hover:text-white transition">
+              Iniciar Sesión
+            </button>
+            <button onclick="openModal('modal-register')" class="gold-gradient text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg hover:brightness-110 transition shadow">
+              Registrarse
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Comunicado / Mensajes de Alerta -->
+  {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 pt-3">
+      {% for message in messages %}
+        <div class="p-3 rounded-xl text-xs font-bold text-center border shadow-md
+          {% if message.tags == 'success' %}bg-emerald-500/20 border-emerald-500/40 text-emerald-300
+          {% elif message.tags == 'warning' %}bg-amber-500/20 border-amber-500/40 text-amber-300
+          {% else %}bg-rose-500/20 border-rose-500/40 text-rose-300{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 mb-16 md:mb-6">
+
+    <!-- VISTA 1: INICIO -->
+    <section id="view-home" class="space-y-6">
+      
+      <!-- BANNER DINÁMICO (Configurado desde el Admin) -->
+      <div class="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900/60 p-6 md:p-10">
+        <div class="relative z-10 max-w-2xl space-y-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+            <span>✨ {{ festival.numero_edicion }} - {{ festival.anio }}</span>
+          </div>
+          <h2 class="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
+            {% if config and config.titulo_banner %}
+              {{ config.titulo_banner }}
+            {% else %}
+              Apoya a tus acordeoneros en el <span class="gold-text">Festival Vallenato {{ festival.anio }}</span>
+            {% endif %}
+          </h2>
+          <p class="text-sm md:text-base text-slate-300 leading-relaxed">
+            {% if config and config.subtitulo_banner %}
+              {{ config.subtitulo_banner }}
+            {% else %}
+              Plataforma oficial certificada por la Fundación Festival de la Leyenda Vallenata. Emite tu voto seguro, transparente y verificado con tu documento de identidad.
+            {% endif %}
+          </p>
+          <div class="pt-2 flex flex-wrap gap-3">
+            <button onclick="showView('votar')" class="gold-gradient text-slate-950 font-bold px-6 py-3 rounded-xl hover:brightness-110 transition shadow-lg text-sm flex items-center gap-2">
+              🪗 Ir a Concursos y Votar
+            </button>
+            <button onclick="showView('cronograma')" class="bg-slate-900 border border-slate-700 text-amber-300 hover:text-white font-bold px-6 py-3 rounded-xl hover:bg-slate-800 transition shadow-lg text-sm flex items-center gap-2">
+              📅 Ver Cronograma
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Homenaje Dinámico -->
+      <div class="glass-card-gold rounded-2xl overflow-hidden p-6 md:p-8 border border-amber-500/40 relative">
+        <div class="flex flex-col lg:flex-row items-center gap-6">
+          <div class="relative w-full lg:w-1/3 flex-shrink-0">
+            <div class="relative rounded-2xl overflow-hidden border-2 border-amber-500/50 shadow-2xl aspect-square bg-slate-900">
+              {% if festival.imagen_homenajeado %}
+                <img src="{{ festival.imagen_homenajeado.url }}" alt="{{ festival.nombre_homenajeado }}" class="w-full h-full object-cover">
+              {% else %}
+                <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80" alt="{{ festival.nombre_homenajeado }}" class="w-full h-full object-cover">
+              {% endif %}
+              <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-black gold-gradient text-slate-950 uppercase">👑 Homenaje Histórico</span>
+                <span class="text-xs text-amber-300 font-bold bg-slate-950/80 px-2 py-0.5 rounded border border-amber-500/30">{{ festival.anios_homenajeado }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="w-full lg:w-2/3 space-y-4">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold">
+              <span>🌟 HOMENAJEADO OFICIAL {{ festival.anio }}</span>
+            </div>
+            <div>
+              <h3 class="text-2xl md:text-4xl font-black text-white"><span class="gold-text">{{ festival.nombre_homenajeado }}</span></h3>
+              <p class="text-xs md:text-sm text-amber-300 font-medium mt-1">"{{ festival.titulo_homenajeado }}"</p>
+            </div>
+            <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
+              {{ festival.biografia_homenajeado }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VISTA: CRONOGRAMA DEL FESTIVAL -->
+    <section id="view-cronograma" class="hidden space-y-6">
+      <div class="border-b border-slate-800 pb-4">
+        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+          <span>📅 Cronograma Oficial de Eventos</span>
+        </h2>
+        <p class="text-xs text-slate-400">Consulta las eliminatorias, actos culturales y espectáculos musicales programados.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for evento in eventos %}
+          <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-3 hover:border-amber-500/40 transition">
+            <div class="flex items-center justify-between">
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase">
+                {{ evento.edicion.numero_edicion }}
+              </span>
+              <span class="text-[11px] text-slate-400 font-medium">📍 {{ evento.lugar }}</span>
+            </div>
+            <h3 class="text-base font-bold text-white">{{ evento.titulo }}</h3>
+            <div class="space-y-1 text-xs text-slate-300 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+              <p>📅 <strong class="text-amber-400">Inicio:</strong> {{ evento.fecha_inicio|date:"d/m/Y - h:i A" }}</p>
+              <p>🏁 <strong class="text-amber-400">Fin:</strong> {{ evento.fecha_fin|date:"d/m/Y - h:i A" }}</p>
+            </div>
+            {% if evento.descripcion %}
+              <p class="text-xs text-slate-400 leading-relaxed">{{ evento.descripcion }}</p>
+            {% endif %}
+          </div>
+        {% empty %}
+          <div class="col-span-full p-6 bg-slate-900/60 rounded-2xl border border-slate-800 text-center text-xs text-slate-400">
+            No hay eventos cargados en el cronograma en este momento. Puedes agregarlos desde el Django Admin.
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- VISTA 2: VOTAR / CATEGORÍAS Y CANDIDATOS -->
+    <section id="view-votar" class="hidden space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+            <span>🪗 Rey Vallenato {{ festival.anio }}</span>
+          </h2>
+          <p class="text-xs text-slate-400">Selecciona tu candidato favorito y confirma en la papeleta virtual.</p>
+        </div>
+      </div>
+
+      {% for cat in categorias %}
+        <div class="space-y-4 mb-8">
+          <div class="flex items-center justify-between border-b border-slate-800/60 pb-2">
+            <h3 class="text-lg font-bold text-amber-400 flex items-center gap-2">
+              <span>🏆</span> {{ cat.nombre }}
+            </h3>
+            <span class="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border 
+              {% if cat.estado == 'abierta' %}bg-emerald-500/20 border-emerald-500/40 text-emerald-300
+              {% elif cat.estado == 'programada' %}bg-amber-500/20 border-amber-500/40 text-amber-300
+              {% else %}bg-rose-500/20 border-rose-500/40 text-rose-300{% endif %}">
+              {{ cat.estado }}
+            </span>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for cand in cat.candidatos.all %}
+              <div class="glass-card rounded-2xl overflow-hidden border border-slate-800 hover:border-amber-500/40 transition flex flex-col justify-between">
+                <div>
+                  <div class="relative h-48 bg-slate-900">
+                    {% if cand.foto %}
+                      <img id="cand-img-{{ cand.id }}" src="{{ cand.foto.url }}" alt="{{ cand.nombre_artistico }}" class="w-full h-full object-cover">
+                    {% else %}
+                      <img id="cand-img-{{ cand.id }}" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80" alt="{{ cand.nombre_artistico }}" class="w-full h-full object-cover">
+                    {% endif %}
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
+                    <span class="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold text-amber-300 border border-amber-500/30">
+                      📍 {{ cat.nombre }}
+                    </span>
+                  </div>
+
+                  <div class="p-5 space-y-2">
+                    <h3 id="cand-name-{{ cand.id }}" class="font-black text-white text-lg">{{ cand.nombre_artistico }}</h3>
+                    <p class="text-xs text-slate-300">{{ cand.biografia|default:"Candidato Oficial al Rey Vallenato." }}</p>
+                  </div>
+                </div>
+
+                <div class="p-5 pt-0">
+                  {% if cat.estado != 'abierta' %}
+                    <div class="w-full py-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-xl text-xs font-bold text-center">
+                      🔒 Votación Cerrada
+                    </div>
+                  {% elif user.is_authenticated %}
+                    {% if cand.id in votos_usuario %}
+                      <div class="w-full py-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-2">
+                        <span>✅ Voto Confirmado en Papeleta</span>
+                      </div>
+                    {% else %}
+                      <button type="button" onclick="pedirConfirmacion('{{ cand.id }}', '{% url 'emitir_voto' cand.id %}')" class="w-full py-3 gold-gradient text-slate-950 font-bold text-center rounded-xl text-xs hover:brightness-110 shadow-md transition">
+                        🪗 Seleccionar para Votar
+                      </button>
+                    {% endif %}
+                  {% else %}
+                    <button type="button" onclick="openModal('modal-login')" class="w-full py-3 bg-slate-800 text-amber-300 rounded-xl text-xs font-semibold hover:bg-slate-700 transition">
+                      🔑 Iniciar Sesión para Votar
+                    </button>
+                  {% endif %}
+                </div>
+              </div>
+            {% empty %}
+              <div class="col-span-full p-4 bg-slate-900/60 rounded-xl text-xs text-slate-400">
+                No hay candidatos registrados en esta categoría aún.
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% empty %}
+        <div class="p-4 bg-slate-900/60 rounded-xl text-xs text-slate-400">
+          No hay categorías registradas en la base de datos.
+        </div>
+      {% endfor %}
+    </section>
+
+    <!-- VISTA 3: RESULTADOS EN VIVO -->
+    <section id="view-resultados" class="hidden space-y-6">
+      <div class="border-b border-slate-800 pb-4">
+        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+          <span>📊 Resultados Parciales y Oficiales {{ festival.anio }}</span>
+        </h2>
+        <p class="text-xs text-slate-400">Monitoreo de escrutinio en tiempo real auditado por la Fundación.</p>
+      </div>
+
+      <div class="glass-card p-6 rounded-2xl space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h3 class="font-bold text-white text-sm">Escalafón General de Votación</h3>
+          <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-md font-semibold">
+            Conteo Oficial Verificado
+          </span>
+        </div>
+
+        <div class="space-y-5">
+          {% for cat in categorias %}
+            <div class="space-y-3">
+              <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider">{{ cat.nombre }}</h4>
+              {% for cand in cat.candidatos.all %}
+                <div class="space-y-1">
+                  <div class="flex justify-between text-xs font-semibold">
+                    <span class="text-white">{{ cand.nombre_artistico }}</span>
+                    <span class="text-amber-400 font-mono">{{ cand.votos.count }} votos</span>
+                  </div>
+                  <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                    {% if total_general > 0 %}
+                      <div class="h-full gold-gradient rounded-full transition-all duration-500" style="width: {% widthratio cand.votos.count total_general 100 %}%;"></div>
+                    {% else %}
+                      <div class="h-full gold-gradient rounded-full transition-all duration-500" style="width: 0%;"></div>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <!-- VISTA 4: PERFIL -->
+    <section id="view-perfil" class="hidden space-y-6">
+      <div class="glass-card p-6 rounded-2xl space-y-4">
+        <h3 class="text-lg font-bold text-white">Acreditación Oficial del Votante</h3>
+        {% if user.is_authenticated %}
+          <div class="p-4 bg-slate-900 rounded-xl border border-amber-500/30 space-y-2 text-xs">
+            <p><strong class="text-slate-400">Nombre Votante:</strong> <span class="text-white font-bold">{{ user.first_name|default:"Registrado" }}</span></p>
+            <p><strong class="text-slate-400">Número de Documento / CC:</strong> <span class="text-amber-400 font-mono font-bold">{{ user.cedula }}</span></p>
+            <p><strong class="text-slate-400">Estado de Certificación:</strong> <span class="text-emerald-400 font-bold">🟢 Firma Digital Certificada</span></p>
+          </div>
+        {% else %}
+          <p class="text-xs text-slate-400">Por favor inicia sesión o crea tu cuenta para visualizar tu acreditación oficial.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- VISTA 5: PANEL DE CONTROL Y AUDITORÍA (ADMIN FUNDACIÓN) -->
+    <section id="view-admin-panel" class="hidden space-y-6">
+      <div class="glass-card p-6 rounded-2xl border-amber-500/40 relative space-y-6">
+        
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <span class="text-[10px] font-black gold-gradient text-slate-950 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+              🛡️ MANDO CENTRAL - FUNDACIÓN FESTIVAL LEYENDA VALLENATA
+            </span>
+            <h2 class="text-2xl font-black text-white mt-1">Panel de Control y Auditoría</h2>
+            <p class="text-xs text-slate-400">Gestión de edición anual, artista homenajeado, apertura/cierre de categorías y nuevos candidatos.</p>
+          </div>
+          <a href="{% url 'cierre_emergencia' %}" onclick="return confirm('¿Ejecutar Cierre de Emergencia Global en todas las categorías?')" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition shadow-lg flex items-center gap-2">
+            🚨 CIERRE DE EMERGENCIA GLOBAL
+          </a>
+        </div>
+
+        <!-- CONFIGURACIÓN GLOBAL DE EDICIÓN Y ARTISTA HOMENAJEADO -->
+        <div class="p-5 bg-slate-900/90 rounded-2xl border border-amber-500/30 space-y-4">
+          <h3 class="font-bold text-amber-400 text-sm flex items-center gap-2">
+            <span>⚙️</span> Configuración de la Edición Anual y Artista Homenajeado
+          </h3>
+          <form method="POST" action="{% url 'inicio' %}" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="actualizar_festival">
+            
+            <div>
+              <label class="text-xs text-slate-300 block mb-1">Año del Festival</label>
+              <input type="number" name="anio" value="{{ festival.anio }}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+            </div>
+
+            <div>
+              <label class="text-xs text-slate-300 block mb-1">Número de Edición</label>
+              <input type="text" name="numero_edicion" value="{{ festival.numero_edicion }}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+            </div>
+
+            <div>
+              <label class="text-xs text-slate-300 block mb-1">Nombre del Homenajeado</label>
+              <input type="text" name="nombre_homenajeado" value="{{ festival.nombre_homenajeado }}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+            </div>
+
+            <div>
+              <label class="text-xs text-slate-300 block mb-1">Título del Homenajeado</label>
+              <input type="text" name="titulo_homenajeado" value="{{ festival.titulo_homenajeado }}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+            </div>
+
+            <div>
+              <label class="text-xs text-slate-300 block mb-1">Años de Vida / Homenaje</label>
+              <input type="text" name="anios_homenajeado" value="{{ festival.anios_homenajeado }}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+            </div>
+
+            <div>
+              <label class="text-xs text-slate-300 block mb-1">Cambiar Foto del Homenajeado (Opcional)</label>
+              <input type="file" name="imagen_homenajeado" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-slate-800 file:text-slate-200">
+            </div>
+
+            <div class="col-span-full">
+              <label class="text-xs text-slate-300 block mb-1">Reseña o Biografía del Homenajeado</label>
+              <textarea name="biografia_homenajeado" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">{{ festival.biografia_homenajeado }}</textarea>
+            </div>
+
+            <button type="submit" class="col-span-full py-2.5 gold-gradient text-slate-950 font-bold text-xs rounded-xl hover:brightness-110 transition shadow">
+              💾 Guardar Edición del Festival y Homenajeado
+            </button>
+          </form>
+        </div>
+
+        <!-- Formularios de Categoría y Candidato -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+          
+          <div class="p-5 bg-slate-900/90 rounded-2xl border border-slate-800 space-y-4">
+            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+              <span>➕</span> Agregar Nueva Categoría
+            </h3>
+            <form method="POST" action="{% url 'inicio' %}" class="space-y-3">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="crear_categoria">
+              <div>
+                <label class="text-xs text-slate-300 block mb-1">Nombre de la Categoría</label>
+                <input type="text" name="nombre_categoria" required placeholder="Ej: Canción Inédita" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+              <div>
+                <label class="text-xs text-slate-300 block mb-1">Descripción</label>
+                <input type="text" name="descripcion_categoria" placeholder="Ej: Composiciones poéticas en 4 aires." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+              <button type="submit" class="w-full py-2.5 gold-gradient text-slate-950 font-bold text-xs rounded-xl hover:brightness-110 transition shadow">
+                ✨ Crear Categoría
+              </button>
+            </form>
+          </div>
+
+          <div class="p-5 bg-slate-900/90 rounded-2xl border border-slate-800 space-y-4">
+            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+              <span>👤</span> Registrar Nuevo Candidato
+            </h3>
+            <form method="POST" action="{% url 'inicio' %}" enctype="multipart/form-data" class="space-y-3">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="crear_candidato">
+              <div>
+                <label class="text-xs text-slate-300 block mb-1">Categoría</label>
+                <select name="categoria_id" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                  {% for cat in categorias %}
+                    <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-slate-300 block mb-1">Nombre Artístico</label>
+                <input type="text" name="nombre_candidato" required placeholder="Ej: Silvestre Dangond" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+              <div>
+                <label class="text-xs text-slate-300 block mb-1">Fotografía (Opcional)</label>
+                <input type="file" name="foto_candidato" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-slate-800 file:text-slate-200">
+              </div>
+              <button type="submit" class="w-full py-2.5 gold-gradient text-slate-950 font-bold text-xs rounded-xl hover:brightness-110 transition shadow">
+                ✨ Guardar Candidato
+              </button>
+            </form>
+          </div>
+
+        </div>
+
+        <!-- Control de Periodos y Estados -->
+        <div class="space-y-4 pt-4">
+          <h3 class="text-sm font-bold text-white border-b border-slate-800 pb-2">⏱️ Control de Periodos y Estados de Votación</h3>
+          
+          {% for cat in categorias %}
+            <div class="p-4 bg-slate-900/60 rounded-xl border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                  <span>🏆</span> {{ cat.nombre }}
+                </h4>
+                <p class="text-xs text-slate-400 mt-0.5">Define la disponibilidad de la votación en tiempo real.</p>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <a href="{% url 'cambiar_estado_categoria' cat.id 'abierta' %}" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition 
+                  {% if cat.estado == 'abierta' %}bg-emerald-500 text-slate-950 border-emerald-400{% else %}bg-slate-800 text-slate-400 border-slate-700 hover:text-white{% endif %}">
+                  🟢 Abierta
+                </a>
+                <a href="{% url 'cambiar_estado_categoria' cat.id 'programada' %}" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition 
+                  {% if cat.estado == 'programada' %}bg-amber-500 text-slate-950 border-amber-400{% else %}bg-slate-800 text-slate-400 border-slate-700 hover:text-white{% endif %}">
+                  🟡 Programada
+                </a>
+                <a href="{% url 'cambiar_estado_categoria' cat.id 'cerrada' %}" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition 
+                  {% if cat.estado == 'cerrada' %}bg-rose-500 text-white border-rose-400{% else %}bg-slate-800 text-slate-400 border-slate-700 hover:text-white{% endif %}">
+                  🔴 Cerrada
+                </a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE CONFIRMACIÓN DE VOTO -->
+  <div id="modal-confirm-vote" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full rounded-2xl p-6 space-y-5 border-amber-500/40 relative text-center">
+      <div class="w-16 h-16 mx-auto rounded-full gold-gradient p-0.5 shadow-lg shadow-amber-500/20 flex items-center justify-center">
+        <div class="w-full h-full bg-slate-950 rounded-full flex items-center justify-center text-2xl">
+          🗳️
+        </div>
+      </div>
+      <div>
+        <h3 class="text-xl font-black text-white">Confirmar Papeleta Virtual</h3>
+        <p class="text-xs text-slate-300 mt-1">¿Estás seguro de emitir tu voto oficial por este candidato?</p>
+      </div>
+      <div class="p-4 bg-slate-900/90 rounded-xl border border-slate-800 space-y-2">
+        <h4 id="confirm-candidate-name" class="text-lg font-bold text-amber-400">Candidato</h4>
+        <p class="text-[11px] text-slate-400">Recuerda que solo se permite un voto por categoría por número de cédula.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-3 pt-2">
+        <button type="button" onclick="closeModal('modal-confirm-vote')" class="w-full py-3 bg-slate-800 text-slate-300 font-semibold rounded-xl text-xs hover:bg-slate-700 transition">
+          ❌ Cancelar
+        </button>
+        <a id="confirm-vote-btn" href="#" class="w-full py-3 gold-gradient text-slate-950 font-bold rounded-xl text-xs hover:brightness-110 shadow-lg transition flex items-center justify-center">
+          ✅ Sí, Confirmar Voto
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 1: INICIAR SESIÓN -->
+  <div id="modal-login" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full rounded-2xl p-6 space-y-5 border-slate-800 relative">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-white">Iniciar Sesión</h3>
+        <button type="button" onclick="closeModal('modal-login')" class="text-slate-400 hover:text-white font-bold p-1">✕</button>
+      </div>
+
+      <form method="POST" action="{% url 'inicio' %}" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="login">
+        
+        <div>
+          <label class="text-xs font-medium text-slate-300 block mb-1">Número de Documento / Cédula</label>
+          <input type="text" name="cedula" required placeholder="Ej: 1043116162" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-slate-300 block mb-1">Contraseña</label>
+          <input type="password" name="password" required placeholder="Ingresa tu contraseña" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+        </div>
+
+        <button type="submit" class="w-full py-3 gold-gradient text-slate-950 font-bold rounded-xl text-xs hover:brightness-110 shadow-lg transition">
+          🔑 Entrar y Continuar
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: CREAR CUENTA -->
+  <div id="modal-register" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card max-w-md w-full rounded-2xl p-6 space-y-4 border-slate-800 relative max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg font-bold text-white">Crear Cuenta de Votante</h3>
+          <p class="text-xs text-slate-400">Registro oficial certificado para el Festival Vallenato.</p>
+        </div>
+        <button type="button" onclick="closeModal('modal-register')" class="text-slate-400 hover:text-white font-bold p-1">✕</button>
+      </div>
+
+      <form method="POST" action="{% url 'inicio' %}" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="register">
+
+        <div>
+          <label class="text-xs font-medium text-slate-300 block mb-1">Nombre Completo</label>
+          <input name="nombre" type="text" required placeholder="Ej: Roberto Carlos" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <div class="col-span-1">
+            <label class="text-xs font-medium text-slate-300 block mb-1">Tipo Doc.</label>
+            <select name="tipo_doc" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-xs text-white">
+              <option value="CC">CC</option>
+              <option value="TI">TI</option>
+              <option value="CE">CE</option>
+              <option value="PAS">PAS</option>
+            </select>
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs font-medium text-slate-300 block mb-1">Número de Documento</label>
+            <input name="cedula" type="text" required placeholder="Ej: 1043116162" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-slate-300 block mb-1">Correo Electrónico</label>
+          <input name="email" type="email" required placeholder="roberto@gmail.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-slate-300 block mb-1">Número de Celular</label>
+          <input name="celular" type="tel" required placeholder="Ej: 3023778184" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+        </div>
+
+        <div>
+  <label class="text-xs font-medium text-slate-300 block mb-1">Crear Contraseña</label>
+  <input name="password" id="reg_password" type="password" required minlength="8" placeholder="Mínimo 8 caracteres y una mayúscula" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+  <p class="text-[10px] text-slate-400 mt-1">Mínimo 8 caracteres, debe contener al menos una mayúscula y evitar secuencias sencillas (ej: 12345678).</p>
+</div>
+
+<div>
+  <label class="text-xs font-medium text-slate-300 block mb-1">Confirmar Contraseña</label>
+  <input name="confirm_password" id="reg_confirm_password" type="password" required minlength="8" placeholder="Repite tu contraseña" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+</div>    
+
+        <div class="flex items-start gap-2 pt-1">
+          <input id="reg-terms" type="checkbox" required class="mt-0.5 rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-amber-500">
+          <label for="reg-terms" class="text-[11px] text-slate-400 leading-tight">
+            Acepto los términos, condiciones y la política de tratamiento de datos personales para las Votaciones Leyenda Vallenata.
+          </label>
+        </div>
+
+        <button type="submit" class="w-full py-3 gold-gradient text-slate-950 font-bold rounded-xl text-xs hover:brightness-110 shadow-lg transition mt-2">
+          ✨ Crear mi Cuenta de Votante
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function showView(viewName) {
+      document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+      const target = document.getElementById(`view-${viewName}`);
+      if (target) target.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.remove('hidden');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+    }
+
+    function pedirConfirmacion(candId, voteUrl) {
+      const candName = document.getElementById(`cand-name-${candId}`).innerText;
+      document.getElementById('confirm-candidate-name').innerText = candName;
+      document.getElementById('confirm-vote-btn').setAttribute('href', voteUrl);
+      openModal('modal-confirm-vote');
+    }
+
+
+    function esInseguro(cadena) {
+  // Regla A: Evita caracteres idénticos repetidos (ej: 111111, aaaaaa, 88888888)
+  if (/^(\w)\1+$/.test(cadena)) return true;
+
+  // Regla B: Evita secuencias numéricas/alfabéticas ascendentes o descendentes (ej: 12345678, 87654321)
+  const esConsecutivo = (str) => {
+    let asc = true, desc = true;
+    for (let i = 0; i < str.length - 1; i++) {
+      if (str.charCodeAt(i + 1) - str.charCodeAt(i) !== 1) asc = false;
+      if (str.charCodeAt(i) - str.charCodeAt(i + 1) !== 1) desc = false;
+    }
+    return asc || desc;
+  };
+
+  return esConsecutivo(cadena);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  const formRegister = document.querySelector("#modal-register form");
+  if (formRegister) {
+    formRegister.addEventListener("submit", function(e) {
+      const cedula = formRegister.querySelector('[name="cedula"]').value.trim();
+      const pass = formRegister.querySelector('[name="password"]').value.trim();
+      const confirmPass = formRegister.querySelector('[name="confirm_password"]').value.trim();
+
+      // 1. Validaciones para la Cédula
+      if (esInseguro(cedula)) {
+        alert("El número de cédula no puede ser una secuencia simple o un número repetido (ej: 12345678, 11111111).");
+        e.preventDefault();
+        return;
+      }
+
+      // 2. Validación de longitud mínima (8 caracteres)
+      if (pass.length < 8) {
+        alert("La contraseña debe tener un mínimo de 8 caracteres.");
+        e.preventDefault();
+        return;
+      }
+
+      // 3. Validación de al menos una letra mayúscula
+      if (!/[A-Z]/.test(pass)) {
+        alert("La contraseña debe incluir al menos una letra mayúscula.");
+        e.preventDefault();
+        return;
+      }
+
+      // 4. Validación anti-patrones en la contraseña
+      if (esInseguro(pass)) {
+        alert("La contraseña es muy débil. Evita secuencias simples o caracteres repetidos (ej: 12345678, 11111111).");
+        e.preventDefault();
+        return;
+      }
+
+      // 5. Coincidencia de contraseñas
+      if (pass !== confirmPass) {
+        alert("Las contraseñas no coinciden. Por favor verifica.");
+        e.preventDefault();
+        return;
+      }
+    });
+  }
+});
+  </script>
+</body>
+</html>
