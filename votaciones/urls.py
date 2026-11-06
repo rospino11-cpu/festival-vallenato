@@ -7,4 +7,5 @@ urlpatterns = [
     path("admin-panel/estado/<int:categoria_id>/<str:nuevo_estado>/", views.cambiar_estado_categoria, name="cambiar_estado_categoria"),
     path("admin-panel/cierre-emergencia/", views.cierre_emergencia, name="cierre_emergencia"),
     path("salir/", views.salir, name="salir"),
+    path('api/categorias/', views.api_categorias, name='api_categorias'),
 ]

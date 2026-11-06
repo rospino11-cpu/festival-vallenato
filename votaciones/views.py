@@ -2,6 +2,7 @@
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
 # Agregamos ConfiguracionSitio y EventoProgramacion a las importaciones
 from .models import Categoria, Candidato, Voto, Usuario, EdicionFestival, ConfiguracionSitio, EventoProgramacion
 
@@ -177,3 +178,7 @@ def cierre_emergencia(request):
 def salir(request):
     logout(request)
     return redirect("inicio")
+
+def api_categorias(request):
+    categorias = Categoria.objects.all().values('id', 'nombre')
+    return JsonResponse(list(categorias), safe=False)
