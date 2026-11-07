@@ -179,6 +179,18 @@ def salir(request):
     logout(request)
     return redirect("inicio")
 
+
 def api_categorias(request):
-    categorias = Categoria.objects.all().values('id', 'nombre')
-    return JsonResponse(list(categorias), safe=False)
+    categorias = Categoria.objects.all()
+    datos = []
+    
+    for categoria in categorias:
+        candidatos = categoria.candidatos.all().values('id', 'nombre_artistico') 
+        
+        datos.append({
+            'id': categoria.id,
+            'nombre': categoria.nombre,
+            'opciones': list(candidatos)
+        })
+        
+    return JsonResponse(datos, safe=False)
